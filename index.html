@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<meta name="description" content="MetaMinds — Smart Radar Life Detection System. Real-time ESP32 dashboard for disaster rescue operations."/>
+<title>MetaMinds | Life Detection System</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="style.css"/>
+</head>
+<body>
+
+<!-- ══ BOOT SCREEN ══ -->
+<div id="bootScreen">
+  <div class="boot-inner">
+    <div class="boot-logo">
+      <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+        <polygon points="24,2 44,13 44,35 24,46 4,35 4,13" fill="none" stroke="#00E5FF" stroke-width="1.5"/>
+        <polygon points="24,8 39,16.5 39,31.5 24,40 9,31.5 9,16.5" fill="none" stroke="#00E5FF" stroke-width="0.75" opacity="0.5"/>
+        <circle cx="24" cy="24" r="4" fill="#00E5FF"/>
+      </svg>
+    </div>
+    <div class="boot-name">MetaMinds</div>
+    <div class="boot-sub">Life Detection System · SIH 2026</div>
+    <div class="boot-bar"><div class="boot-fill" id="bootFill"></div></div>
+    <div class="boot-status" id="bootStatus">Initialising system...</div>
+  </div>
+</div>
+
+<!-- ══ ALERT BANNER ══ -->
+<div id="alertBanner">
+  <span class="alert-icon">⚠</span>
+  <span id="alertText">LIFE DETECTED — DUAL SENSOR CONFIRMED</span>
+  <button onclick="dismissAlert()" class="alert-close">✕</button>
+</div>
+
+<!-- ══ HEADER ══ -->
+<header id="hdr">
+  <div class="hdr-left">
+    <div class="hdr-logo">
+      <svg width="28" height="28" viewBox="0 0 48 48" fill="none">
+        <polygon points="24,2 44,13 44,35 24,46 4,35 4,13" fill="none" stroke="currentColor" stroke-width="2"/>
+        <circle cx="24" cy="24" r="5" fill="currentColor"/>
+      </svg>
+    </div>
+    <div>
+      <div class="hdr-name">MetaMinds</div>
+      <div class="hdr-sub">Smart India Hackathon 2026</div>
+    </div>
+  </div>
+
+  <div class="hdr-ticker" id="ticker">
+    <div class="tick-item">ESP32 <span class="tick-v">DevKit V1</span></div>
+    <div class="tick-sep">·</div>
+    <div class="tick-item">Flash <span class="tick-v">4 MB</span></div>
+    <div class="tick-sep">·</div>
+    <div class="tick-item">SRAM <span class="tick-v">520 KB</span></div>
+    <div class="tick-sep">·</div>
+    <div class="tick-item">CPU <span class="tick-v">240 MHz</span></div>
+    <div class="tick-sep">·</div>
+    <div class="tick-item">MW Pin <span class="tick-v">GPIO 13</span></div>
+    <div class="tick-sep">·</div>
+    <div class="tick-item">PIR Pin <span class="tick-v">GPIO 21</span></div>
+    <div class="tick-sep">·</div>
+    <div class="tick-item">Servo <span class="tick-v">GPIO 18</span></div>
+  </div>
+
+  <div class="hdr-right">
+    <div class="conn-badge" id="connBadge" onclick="openConnModal()">
+      <span class="conn-dot" id="connDot"></span>
+      <span id="connLabel">Demo Mode</span>
+    </div>
+    <div class="hdr-clock" id="clock">--:--:--</div>
+  </div>
+</header>
+
+<!-- ══ MAIN GRID ══ -->
+<main id="main">
+
+  <!-- ROW 1: STAT TILES -->
+  <div class="tile-row">
+    <div class="tile" id="tile-mw">
+      <div class="tile-top">
+        <span class="tile-label">Microwave Signal</span>
+        <span class="tile-icon mw-icon">◈</span>
+      </div>
+      <div class="tile-val" id="tv-mw">0.00</div>
+      <div class="tile-bar"><div class="tile-bar-fill mw-bar" id="tb-mw" style="width:0%"></div></div>
+      <div class="tile-status" id="ts-mw">IDLE · GPIO 13</div>
+    </div>
+    <div class="tile" id="tile-pir">
+      <div class="tile-top">
+        <span class="tile-label">PIR Heat Sensor</span>
+        <span class="tile-icon pir-icon">◉</span>
+      </div>
+      <div class="tile-val" id="tv-pir">LOW</div>
+      <div class="tile-bar"><div class="tile-bar-fill pir-bar" id="tb-pir" style="width:0%"></div></div>
+      <div class="tile-status" id="ts-pir">NO HEAT · GPIO 21</div>
+    </div>
+    <div class="tile" id="tile-srv">
+      <div class="tile-top">
+        <span class="tile-label">Servo Sweep</span>
+        <span class="tile-icon srv-icon">⟳</span>
+      </div>
+      <div class="tile-val" id="tv-srv">0°</div>
+      <div class="tile-bar"><div class="tile-bar-fill srv-bar" id="tb-srv" style="width:0%"></div></div>
+      <div class="tile-status" id="ts-srv">SCANNING · GPIO 18</div>
+    </div>
+    <div class="tile tile-alert" id="tile-det">
+      <div class="tile-top">
+        <span class="tile-label">Life Detections</span>
+        <span class="tile-icon det-icon">⚑</span>
+      </div>
+      <div class="tile-val red-val" id="tv-det">0</div>
+      <div class="tile-bar"><div class="tile-bar-fill det-bar" id="tb-det" style="width:0%"></div></div>
+      <div class="tile-status" id="ts-det">ALL CLEAR</div>
+    </div>
+  </div>
+
+  <!-- ROW 2: MAIN CHART + RADAR + STATS -->
+  <div class="row2">
+
+    <!-- RADAR PANEL -->
+    <div class="panel radar-panel">
+      <div class="panel-hd">
+        <span class="panel-title">Area Scan Radar</span>
+        <span class="panel-badge">SERVO SWEEP</span>
+      </div>
+      <canvas id="radarCv"></canvas>
+      <div class="radar-meta">
+        <span>Angle: <b id="radarDeg">0°</b></span>
+        <span>Range: <b>0–180°</b></span>
+        <span>Mode: <b id="radarMode">AUTO</b></span>
+      </div>
+    </div>
+
+    <!-- MAIN CHART -->
+    <div class="panel chart-panel">
+      <div class="panel-hd">
+        <span class="panel-title">Live Sensor Telemetry</span>
+        <div class="legend">
+          <span class="leg-item"><span class="leg-dot mw-dot"></span>Microwave</span>
+          <span class="leg-item"><span class="leg-dot pir-dot"></span>PIR</span>
+          <span class="leg-item"><span class="leg-dot srv-dot"></span>Servo</span>
+          <span class="leg-item"><span class="leg-dot alt-dot"></span>Alert</span>
+        </div>
+      </div>
+      <div class="chart-wrap">
+        <canvas id="mainChart"></canvas>
+      </div>
+    </div>
+
+    <!-- GAUGES COLUMN -->
+    <div class="gauges-col">
+      <div class="panel gauge-panel">
+        <div class="panel-hd"><span class="panel-title">MW Intensity</span></div>
+        <canvas id="gaugeMW" width="200" height="120"></canvas>
+        <div class="gauge-val mw-text" id="gv-mw">0.00</div>
+        <div class="gauge-state" id="gs-mw">Idle</div>
+      </div>
+      <div class="panel gauge-panel">
+        <div class="panel-hd"><span class="panel-title">PIR Signal</span></div>
+        <canvas id="gaugePIR" width="200" height="120"></canvas>
+        <div class="gauge-val pir-text" id="gv-pir">0</div>
+        <div class="gauge-state" id="gs-pir">No motion</div>
+      </div>
+      <div class="panel gauge-panel">
+        <div class="panel-hd"><span class="panel-title">Confidence</span></div>
+        <canvas id="gaugeConf" width="200" height="120"></canvas>
+        <div class="gauge-val conf-text" id="gv-conf">0%</div>
+        <div class="gauge-state" id="gs-conf">Monitoring</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ROW 3: MINI CHARTS + LOG + CONTROLS -->
+  <div class="row3">
+    <div class="panel mini-panel">
+      <div class="mini-hd"><span>Microwave History</span><span class="mini-val mw-text" id="mm-mw">0.00</span></div>
+      <div class="mini-wrap"><canvas id="mc-mw"></canvas></div>
+    </div>
+    <div class="panel mini-panel">
+      <div class="mini-hd"><span>PIR History</span><span class="mini-val pir-text" id="mm-pir">0</span></div>
+      <div class="mini-wrap"><canvas id="mc-pir"></canvas></div>
+    </div>
+    <div class="panel mini-panel">
+      <div class="mini-hd"><span>Servo Sweep</span><span class="mini-val srv-text" id="mm-srv">0°</span></div>
+      <div class="mini-wrap"><canvas id="mc-srv"></canvas></div>
+    </div>
+    <div class="panel log-panel">
+      <div class="panel-hd">
+        <span class="panel-title">Event Log</span>
+        <button class="hd-btn" onclick="clearLog()">Clear</button>
+      </div>
+      <div class="log-scroll" id="logScroll"></div>
+    </div>
+    <div class="panel ctrl-panel">
+      <div class="panel-hd"><span class="panel-title">System Control</span></div>
+      <div class="ctrl-grid">
+        <div class="ctrl-row">
+          <span class="ctrl-label">ESP32 IP</span>
+          <input class="ctrl-inp" id="espIp" value="192.168.1.100" placeholder="192.168.x.x"/>
+        </div>
+        <div class="ctrl-row">
+          <span class="ctrl-label">WS Port</span>
+          <input class="ctrl-inp" id="wsPort" value="81" style="width:60px"/>
+        </div>
+        <div class="ctrl-row">
+          <span class="ctrl-label">Interval</span>
+          <span class="ctrl-val" id="intervalDisp">500ms</span>
+        </div>
+        <div class="ctrl-row">
+          <span class="ctrl-label">Uptime</span>
+          <span class="ctrl-val" id="uptimeDisp">0s</span>
+        </div>
+        <div class="ctrl-row">
+          <span class="ctrl-label">Samples</span>
+          <span class="ctrl-val" id="samplesDisp">0</span>
+        </div>
+        <div class="ctrl-row">
+          <span class="ctrl-label">Detections</span>
+          <span class="ctrl-val red-val" id="detsDisp">0</span>
+        </div>
+      </div>
+      <div class="btn-group">
+        <button class="btn btn-primary" onclick="connectWS()">⚡ Connect</button>
+        <button class="btn btn-secondary" id="demoBtn" onclick="toggleDemo()">⏸ Pause Demo</button>
+        <button class="btn btn-danger" onclick="exportCSV()">↓ Export CSV</button>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<!-- ══ CONNECT MODAL ══ -->
+<div class="modal-bg" id="modalBg" onclick="closeConnModal()">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-hd">
+      <span class="modal-title">Connect to ESP32</span>
+      <button class="modal-close" onclick="closeConnModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <p class="modal-hint">Enter your ESP32's IP address from the Arduino Serial Monitor. Both devices must be on the same WiFi network.</p>
+      <div class="modal-row">
+        <label>IP Address</label>
+        <input class="modal-inp" id="modalIp" placeholder="192.168.1.100"/>
+      </div>
+      <div class="modal-row">
+        <label>Port</label>
+        <input class="modal-inp" id="modalPort" value="81" style="width:80px"/>
+      </div>
+      <div class="modal-code" id="modalStatus">Status: Not connected</div>
+      <div class="modal-btns">
+        <button class="btn btn-primary" onclick="connectFromModal()">⚡ Connect</button>
+        <button class="btn btn-secondary" onclick="closeConnModal()">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
